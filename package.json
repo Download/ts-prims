@@ -1,0 +1,105 @@
+{
+  "name": "ts-prims",
+  "version": "0.0.1",
+  "description": "Typescript Primitives",
+  "main": "./lib/cjs/index.js",
+  "module": "./lib/mjs/index.js",
+  "exports": {
+    ".": {
+      "import": "./lib/mjs/index.js",
+      "require": "./lib/cjs/index.js"
+    },
+    "./integer.js": {
+      "import": "./lib/mjs/integer.js",
+      "require": "./lib/cjs/integer.js"
+    },
+    "./memo.js": {
+      "import": "./lib/mjs/memo.js",
+      "require": "./lib/cjs/memo.js"
+    },
+    "./numeric.js": {
+      "import": "./lib/mjs/numeric.js",
+      "require": "./lib/cjs/numeric.js"
+    },
+    "./prim.js": {
+      "import": "./lib/mjs/prim.js",
+      "require": "./lib/cjs/prim.js"
+    },
+    "./range.js": {
+      "import": "./lib/mjs/range.js",
+      "require": "./lib/cjs/range.js"
+    },
+    "./real.js": {
+      "import": "./lib/mjs/real.js",
+      "require": "./lib/cjs/real.js"
+    },
+    "./text.js": {
+      "import": "./lib/mjs/text.js",
+      "require": "./lib/cjs/text.js"
+    },
+    "./unsigned.js": {
+      "import": "./lib/mjs/unsigned.js",
+      "require": "./lib/cjs/unsigned.js"
+    },
+    "./varchar.js": {
+      "import": "./lib/mjs/varchar.js",
+      "require": "./lib/cjs/varchar.js"
+    }
+  },
+  "scripts": {
+    "build:cjs": "npm run clean:cjs && tsc --module CommonJS --outDir lib/cjs && copyfiles -f pkg/cjs/* lib/cjs",
+    "build:mjs": "npm run clean:mjs && tsc --module ES2020 --outDir lib/mjs && copyfiles -f pkg/mjs/* lib/mjs",
+    "build": "npm run build:cjs && npm run build:mjs",
+    "clean:cjs": "rimraf lib/cjs",
+    "clean:mjs": "rimraf lib/mjs",
+    "clean": "rimraf lib",
+    "prepare": "npm run clean && npm run build",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Download/ts-prims.git"
+  },
+  "keywords": [
+    "typescript",
+    "primitives",
+    "prim",
+    "string",
+    "text",
+    "memo",
+    "varchar",
+    "number",
+    "numeric",
+    "real",
+    "float64",
+    "float32",
+    "double",
+    "float",
+    "integer",
+    "int53",
+    "int32",
+    "int16",
+    "int8",
+    "long",
+    "int",
+    "unsigned",
+    "uitn52",
+    "uint32",
+    "uint16",
+    "uint8",
+    "ulong",
+    "uint",
+    "byte"
+  ],
+  "author": "Stijn de Witt",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Download/ts-prims/issues"
+  },
+  "homepage": "https://github.com/Download/ts-prims#readme",
+  "devDependencies": {
+    "copyfiles": "^2.4.1",
+    "rimraf": "^3.0.2",
+    "typescript": "^4.9.3"
+  }
+}
