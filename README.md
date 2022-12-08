@@ -1,0 +1,2 @@
+# ts-prims
+Typescript Prmitives
