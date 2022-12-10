@@ -1,9 +1,10 @@
 {
   "name": "ts-prims",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Typescript Primitives",
   "main": "./lib/cjs/index.js",
   "module": "./lib/mjs/index.js",
+  "types": "./lib/mjs/index.d.ts",
   "exports": {
     ".": {
       "import": "./lib/mjs/index.js",
@@ -47,9 +48,9 @@
     }
   },
   "scripts": {
-    "build:cjs": "npm run clean:cjs && tsc --module CommonJS --outDir lib/cjs && copyfiles -f pkg/cjs/* lib/cjs",
-    "build:mjs": "npm run clean:mjs && tsc --module ES2020 --outDir lib/mjs && copyfiles -f pkg/mjs/* lib/mjs",
-    "build": "npm run build:cjs && npm run build:mjs",
+    "build:cjs": "npm run clean:cjs && tsc --module CommonJS --esModuleInterop true --outDir lib/cjs && copyfiles -f pkg/cjs/* lib/cjs",
+    "build:mjs": "npm run clean:mjs && tsc --module ES2020 --esModuleInterop false --outDir lib/mjs && copyfiles -f pkg/mjs/* lib/mjs",
+    "build": "npm run build:mjs && npm run build:cjs",
     "clean:cjs": "rimraf lib/cjs",
     "clean:mjs": "rimraf lib/mjs",
     "clean": "rimraf lib",
