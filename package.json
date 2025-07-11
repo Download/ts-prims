@@ -1,6 +1,6 @@
 {
   "name": "ts-prims",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "description": "Typescript Primitives",
   "main": "./lib/cjs/index.js",
   "module": "./lib/mjs/index.js",
@@ -10,41 +10,41 @@
       "import": "./lib/mjs/index.js",
       "require": "./lib/cjs/index.js"
     },
-    "./integer.js": {
-      "import": "./lib/mjs/integer.js",
-      "require": "./lib/cjs/integer.js"
+    "./big.js": {
+      "import": "./lib/mjs/big.js",
+      "require": "./lib/cjs/big.js"
+    },
+    "./int.js": {
+      "import": "./lib/mjs/int.js",
+      "require": "./lib/cjs/int.js"
     },
     "./memo.js": {
       "import": "./lib/mjs/memo.js",
       "require": "./lib/cjs/memo.js"
     },
-    "./numeric.js": {
-      "import": "./lib/mjs/numeric.js",
-      "require": "./lib/cjs/numeric.js"
-    },
     "./prim.js": {
       "import": "./lib/mjs/prim.js",
       "require": "./lib/cjs/prim.js"
-    },
-    "./range.js": {
-      "import": "./lib/mjs/range.js",
-      "require": "./lib/cjs/range.js"
-    },
-    "./real.js": {
-      "import": "./lib/mjs/real.js",
-      "require": "./lib/cjs/real.js"
     },
     "./text.js": {
       "import": "./lib/mjs/text.js",
       "require": "./lib/cjs/text.js"
     },
-    "./unsigned.js": {
-      "import": "./lib/mjs/unsigned.js",
-      "require": "./lib/cjs/unsigned.js"
+    "./util.js": {
+      "import": "./lib/mjs/util.js",
+      "require": "./lib/cjs/util.js"
     },
     "./varchar.js": {
       "import": "./lib/mjs/varchar.js",
       "require": "./lib/cjs/varchar.js"
+    },
+    "./varint.js": {
+      "import": "./lib/mjs/varint.js",
+      "require": "./lib/cjs/varint.js"
+    },
+    "./width.js": {
+      "import": "./lib/mjs/width.js",
+      "require": "./lib/cjs/width.js"
     }
   },
   "scripts": {
@@ -54,7 +54,7 @@
     "clean:cjs": "rimraf lib/cjs",
     "clean:mjs": "rimraf lib/mjs",
     "clean": "rimraf lib",
-    "prepare": "npm run clean && npm run build",
+    "prepare": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -70,27 +70,24 @@
     "memo",
     "varchar",
     "number",
-    "numeric",
-    "real",
-    "float64",
-    "float32",
-    "double",
-    "float",
-    "integer",
-    "int53",
+    "varint",
+    "int",
+    "int54",
+    "int48",
+    "int40",
     "int32",
+    "int24",
     "int16",
     "int8",
-    "long",
-    "int",
-    "unsigned",
-    "uitn52",
-    "uint32",
-    "uint16",
-    "uint8",
-    "ulong",
-    "uint",
-    "byte"
+    "big",
+    "big64",
+    "big96",
+    "big128",
+    "big160",
+    "big192",
+    "big256",
+    "big512",
+    "big4K"
   ],
   "author": "Stijn de Witt",
   "license": "MIT",
