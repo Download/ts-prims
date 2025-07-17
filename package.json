@@ -1,6 +1,6 @@
 {
   "name": "ts-prims",
-  "version": "0.1.0",
+  "version": "0.3.0",
   "description": "Typescript Primitives",
   "main": "./lib/cjs/index.js",
   "module": "./lib/mjs/index.js",
@@ -14,9 +14,21 @@
       "import": "./lib/mjs/big.js",
       "require": "./lib/cjs/big.js"
     },
+    "./chars.js": {
+      "import": "./lib/mjs/chars.js",
+      "require": "./lib/cjs/chars.js"
+    },
+    "./clob.js": {
+      "import": "./lib/mjs/clob.js",
+      "require": "./lib/cjs/clob.js"
+    },
     "./int.js": {
       "import": "./lib/mjs/int.js",
       "require": "./lib/cjs/int.js"
+    },
+    "./length.js": {
+      "import": "./lib/mjs/length.js",
+      "require": "./lib/cjs/length.js"
     },
     "./memo.js": {
       "import": "./lib/mjs/memo.js",

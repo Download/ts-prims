@@ -1,10 +1,13 @@
-/** Copyright 2025 by Stijn de Witt, some rights reserved */
-import { type Lte } from './util.js'
+import { type length, lengthConstraint } from './length.js'
 import { type prim, Prim } from './prim.js'
+// for linking from jsdoc comments:
+import type { clob } from './clob.js'
+import type { memo } from './memo.js'
+import type { varchar } from './varchar.js'
 
 /**
  * The base prim type for text with a maximum length
- * of 262144 characters (256K).
+ * of 16777216 characters (16M), length `14`.
  *
  * ```ts
  * import { type text, Text } from 'ts-prims'
@@ -15,13 +18,13 @@ import { type prim, Prim } from './prim.js'
  * x = Text('Checked at runtime')
  * ```
  *
- * @see {@link Text}
+ * @see {@link Text} The constructor
+ * @see {@link clob} For very long strings with a maximum length of 16M chars
+ * @see {@link memo} For medium length strings with a maximum of 4K chars
+ * @see {@link varchar} For short strings with a maximum of 256 chars
  */
 export type text =
-  prim<string, {
-    max: Lte<256> | 4096 | 262144,
-    width: Lte<15>
-  }>
+  prim<string, length<14>>
 
 /**
  * The prim type constructor function for `text`
@@ -37,8 +40,6 @@ export type text =
  *
  * @see {@link text}
  */
-export const Text =
-  Prim<text>(`text`, String, {
-    is: (v): v is text =>
-      (typeof v == 'string') && v.length <= 262144
-  })
+export const Text = Prim<text>(
+  `text`, String, [ lengthConstraint(14) ]
+)

@@ -1,28 +1,19 @@
-/** Copyright 2025 by Stijn de Witt, some rights reserved */
-import type { Lte } from './util.js'
-import type { Width, LowWidth, HighWidth, _8bit, _16bit, _24bit,
+import type { width, LowWidth, _8bit, _16bit, _24bit,
   _32bit, _40bit, _48bit, _54bit, _64bit } from './width.js'
+import { widthConstraint } from './width.js'
 import type { big, big64 } from './big.js'
 import { type prim, Prim } from './prim.js'
-import type { varint } from './varint.js'
+import { type varint, isInteger } from './varint.js'
 
 /**
  * Int type with low int width `W`.
  *
  * ```ts
  * type byte = int<1>
- * // type byte = number & {
- * //     constructor: Constructor<number>;
- * // } & {
- * //     width: Lte<1>;
- * // }
+ * // type byte = number & supertype<number> & width<1>
  *
  * type word = int<2>
- * // type word = number & {
- * //     constructor: Constructor<number>;
- * // } & {
- * //     width: Lte<2>;
- * // }
+ * // type word = number & supertype<number> & width<2>
  *
  * let x: byte = 100 as byte
  * let y: word = 1000 as word
@@ -38,12 +29,10 @@ import type { varint } from './varint.js'
  * @see {@link int54} for the last int in the low-width (fast) range
  * @see {@link big} for the ints in the high-width (slow) range
  * @see {@link varint} for the low-level type that accepts all widths
- * @see {@link Width} for all widths
- * @see {@link LowWidth} for the widths in the low (fast) range
- * @see {@link HighWidth} for the widths in the high (slow) range
+ * @see {@link LowWidth} for the supported low number widths
  */
-export type int <W extends LowWidth> =
-  prim<number, { width: Lte<W> }>
+export type int <W extends LowWidth = 7> =
+  prim<number, width<W>>
 
 /**
  * @template W The `Width`, inferred from parameter `w`.
@@ -54,18 +43,14 @@ export type int <W extends LowWidth> =
  * @see {@link int}
  * @see {@link LowWidth}
  */
-export const Int =
-  <W extends LowWidth> (w:W) =>
-  Prim<int<W>>(
-    `int<${w}>`, Number
-  )
+export const Int = <W extends LowWidth = 7> (w:W = 7 as W) => Prim<int<W>> (
+  `int<${w}>`, Number, [ isInteger, widthConstraint(w) ]
+)
 
 /**
  * `8`-bit integer in the `LowWidth` (fast) range.
  *
  * @see {@link int16} for the next int in the low-width (fast) range
- * @see {@link LowWidth} for all int widths in the low (fast) range
- * @see {@link HighWidth} for the int widths in the high (slow) range
  */
 export type int8 = int<_8bit>
 
@@ -77,8 +62,6 @@ export const Int8 = Int(1)
  *
  * @see {@link int8} for the previous int in the low-width (fast) range
  * @see {@link int24} for the next int in the low-width (fast) range
- * @see {@link LowWidth} for all int widths in the low (fast) range
- * @see {@link HighWidth} for the int widths in the high (slow) range
  */
 export type int16 = int<_16bit>
 
@@ -90,8 +73,6 @@ export const Int16 = Int(2)
  *
  * @see {@link int16} for the previous int in the low-width (fast) range
  * @see {@link int32} for the next int in the low-width (fast) range
- * @see {@link LowWidth} for all int widths in the low (fast) range
- * @see {@link HighWidth} for the int widths in the high (slow) range
  */
 export type int24 = int<_24bit>
 
@@ -103,8 +84,6 @@ export const Int24 = Int(3)
  *
  * @see {@link int24} for the previous int in the low-width (fast) range
  * @see {@link int40} for the next int in the low-width (fast) range
- * @see {@link LowWidth} for all int widths in the low (fast) range
- * @see {@link HighWidth} for the int widths in the high (slow) range
  */
 export type int32 = int<_32bit>
 
@@ -116,8 +95,6 @@ export const Int32 = Int(4)
  *
  * @see {@link int32} for the previous int in the low-width (fast) range
  * @see {@link int48} for the next int in the low-width (fast) range
- * @see {@link LowWidth} for all int widths in the low (fast) range
- * @see {@link HighWidth} for the int widths in the high (slow) range
  */
 export type int40 = int<_40bit>
 
@@ -129,8 +106,6 @@ export const Int40 = Int(5)
  *
  * @see {@link int40} for the previous int in the low-width (fast) range
  * @see {@link int54} for the next int in the low-width (fast) range
- * @see {@link LowWidth} for all int widths in the low (fast) range
- * @see {@link HighWidth} for the int widths in the high (slow) range
  */
 export type int48 = int<_48bit>
 
@@ -148,8 +123,6 @@ export const Int48 = Int(6)
  *
  * @see {@link int48} for the previous int in the low-width (fast) range
  * @see {@link big64} for the first int in the high-width (slow) range
- * @see {@link LowWidth} for all int widths in the low (fast) range
- * @see {@link HighWidth} for the int widths in the high (slow) range
  */
 export type int54 = int<_54bit>
 

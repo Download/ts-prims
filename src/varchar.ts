@@ -1,8 +1,9 @@
 /** Copyright 2025 by Stijn de Witt, some rights reserved */
-import { type PRIM, type prim, Prim } from './prim.js'
-import { type memo, Memo } from './memo.js'
-import { type Lte } from './util.js'
-import { Text } from './text.js'
+import { type prim, Prim } from './prim.js'
+import { type Chars, type chars, charsConstraint } from './chars.js'
+// For linking from jsdoc comments:
+import type { memo } from './memo.js'
+import type { text } from './text.js'
 
 /**
  * A variable length string with a maximum length of `N`
@@ -13,12 +14,13 @@ import { Text } from './text.js'
  * SQL's `varchar`. For longer strings, use `memo` if the string length
  * remains below 64K, or `text` otherwise.
  *
- * @see {@link Memo}
- * @see {@link Text}
- * @see {@link Lte}
+ * @see {@link memo} For medium length strings with a maximum of 4K chars
+ * @see {@link Text} For long strings with a maximum of 16M chars
+ * @see {@link clob} For very long strings with a maximum of 4G chars
+ * @see {@link chars} Constraint for short lengths expressed in chars
  */
-export type varchar<N extends Lte<256>> =
-  prim<memo, { max: Lte<N>, width: Lte<1> }>
+export type varchar<N extends Chars> =
+  prim<string, chars<N>>
 
 /**
  * The prim factory function for `varchar`.
@@ -39,8 +41,6 @@ export type varchar<N extends Lte<256>> =
  * @returns The prim type constructor function for `varchar<N>`
  */
 export const Varchar =
-  <N extends Lte<256>> (n: N) =>
-  Prim <varchar<N>> (`varchar<${n}>`, Memo, {
-    is: (v: PRIM): v is varchar<N> =>
-      Memo.is(v) && v.length <= n
-  })
+  <N extends Chars> (n: N) => Prim <varchar<N>> (
+    `varchar<${n}>`, String, [ charsConstraint(n) ]
+  )

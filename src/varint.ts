@@ -1,13 +1,21 @@
 /** Copyright 2025 by Stijn de Witt, all rights reserved */
-import type { Lte } from './util.js'
-import type { Width, LowWidth, HighWidth, NumberWidth, _8bit, _16bit, _24bit,
-  _32bit, _40bit, _48bit, _54bit, _64bit, _96bit, _128bit, _160bit, _192bit,
-  _256bit, _512bit, _4Kbit } from './width.js'
-import { type prim, type SuperConstructor, Prim } from './prim.js'
+import type {
+  prim, PRIM, Constraint, SuperConstructor, PrimConstructor
+} from './prim.js'
+import { Prim, display } from './prim.js'
+import type { Width, width, LowWidth, HighWidth, NumberWidth, _8bit, _16bit,
+  _24bit, _32bit, _40bit, _48bit, _54bit, _64bit, _96bit, _128bit, _160bit,
+  _192bit, _256bit, _512bit, _4Kbit } from './width.js'
+import { widthConstraint } from './width';
+
+/**
+ * The possible prim types for the `varint` type.
+ */
+export type VARINT = number | bigint
 
 /**
  * Specifies the platform-specific underlying processing / storage format for
- * `int`s, based on the given int width `W`, in a cross-platform way.
+ * integers, based on the given int width `W`, in a cross-platform way.
  *
  * This abstraction allows ints to be highly flexible in their size, while
  * simultaneously rigidly specified. A 'fixed varint' if you will.
@@ -37,15 +45,34 @@ import { type prim, type SuperConstructor, Prim } from './prim.js'
  * @see {@link NativeIntWidth}
  * @see {@link Width}
  */
-export type IntType<W extends Width = 7> =
-  W extends NumberWidth ? number :
+export type IntegerType<W extends Width = 7> =
+  W extends NumberWidth ?
+  number :
   bigint
 
-export const intType = <W extends Width> (w:W) =>
-  w <= 7 ? Number :
-  BigInt
+/**
+ * Returns the constructor for the `varint` with the given Width `W`.
+ *
+ * @param w The width of the integer type, in the range `0 <= w <= 15`
+ * @returns `Number` or `BigInt`
+ */
+export const integerType = <W extends Width> (w:W) =>
+  (w <= 7 ? Number : BigInt) as SuperConstructor<varint<W>>
 
 /**
+ * Runtime constraint that checks whether the given value `v` is an integer.
+ *
+ * @param pc The prim constructor for the type `P`
+ * @param v The value to check
+ * @returns `undefined` if `v` is an integer, otherwise a `string` error message
+ */
+export const isInteger: Constraint =
+  <P extends PRIM> (pc: PrimConstructor<P>, v: PRIM) =>
+  (typeof v == 'bigint') || Number.isInteger(v) ? undefined :
+  `${display(v)} is not assignable to type '${pc.name}'.\n` +
+  `  Not an integer.`
+
+  /**
  * Low-level 'fixed variable-width' signed integer type.
  *
  * This integer type allows for a wide range of bit widths to be supported,
@@ -92,17 +119,24 @@ export const intType = <W extends Width> (w:W) =>
  * @see {@link HighWidth} for the int widths in the high (slow) range
  */
 export type varint <W extends Width> =
-  prim<IntType<W>, { width: Lte<W> }>
+  prim<IntegerType<W>, width<W>>
 
 /**
  * Returns the prim constructor for the `varint` with the given Width `W`.
+ *
+ * This constructor function validates that the given value `v` is an
+ * integer and that it is within the range of the width `w`.
+ *
+ * ```ts
+ * type byte = varint<1>
+ * const Byte = Varint(1)
+ * let b: byte = Byte(250) // runtime error
+ * // TypeError: 250 is not in range of 'varint<1>': -128 .. 127
  *
  * @template W The width (type), inferred from param `w`
  * @param w The width (value)
  * @returns The prim constructor function
  */
-export const Varint =
-  <W extends Width> (w:W) =>
-  Prim<varint<W>>(
-    `varint<${w}>`, intType(w) as SuperConstructor<varint<W>>
-  )
+export const Varint = <W extends Width> (w:W) => Prim<varint<W>> (
+  `varint<${w}>`, integerType(w), [ isInteger, widthConstraint(w) ]
+)

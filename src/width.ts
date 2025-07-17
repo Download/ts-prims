@@ -1,4 +1,13 @@
-/** Copyright 2025 by Stijn de Witt, some rights reserved */
+import type { PRIM, Constraint, PrimConstructor } from './prim.js'
+import { display } from './prim.js'
+import { type Lte } from './util.js'
+
+/**
+ * Constraint limiting a type to the given Width `W`
+ */
+export type width<W extends Width> =
+  { width: Lte<W> }
+
 /**
  * The 16 fixed widths in this framework.
  *
@@ -79,11 +88,29 @@ export type WidthBitsArray = readonly
 export type WidthBits<W extends Width> =
   WidthBitsArray[W]
 
+/** The widths in bits corresponding to the different `Width`s as an array */
 export const widthBitsArray: WidthBitsArray =
   [ ...lowWidthBits, ...highWidthBits]
 
+/** The width in bits corresponding to width `w` */
 export const widthBits = <W extends Width> (w: W) =>
   widthBitsArray[w]
+
+/** Utility to generate a runtime constraint for with `w` */
+export type WidthConstraint =
+  <W extends Width> (w: W) => Constraint
+
+/** Generates a runtime constraint constraining some type to width `w` */
+export const widthConstraint: WidthConstraint =
+  <W extends Width> (w: W) => {
+    const wb = BigInt(widthBits(w)), sh = 1n << (wb - 1n)
+    const min = 0n - sh, max = sh - 1n
+    const range = w <= 7 ? `${min} .. ${max}` : `0 ± 2^(${wb}-1)-1`
+    return <P extends PRIM> (pc: PrimConstructor<P>, v: PRIM) =>
+      (BigInt(v) >= min) && (BigInt(v) <= max) ? undefined :
+      `${display(v)} is not assignable to '${pc.name}'.\n` +
+      `  Not in range ${range}.`
+  }
 
 // aliases - low width
 export type _0bit     =  0

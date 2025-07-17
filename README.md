@@ -19,7 +19,14 @@ to start with.
     - [PRIM](#prim)
     - [prim type](#prim-type)
     - [Prim function](#prim-function)
+    - [Constraints](#constraints)
+      - [`width`](#width)
+      - [`length`](#length)
+      - [`chars`](#chars)
+      - [`superConstraint`](#superconstraint)
+      - [`isInteger`](#isinteger)
     - [Helper types](#helper-types)
+      - [supertype](#supertype)
       - [Constructor](#constructor)
       - [PrimConstructor](#primconstructor)
       - [NativeConstructor](#nativeconstructor)
@@ -29,11 +36,13 @@ to start with.
       - [AsPrim](#asprim)
       - [PrimTypeOf](#primtypeof)
       - [Rtti](#rtti)
-      - [HasSuper](#hassuper)
-      - [GetSuper](#getsuper)
       - [PrimFactory](#primfactory)
   - [Primitive types included](#primitive-types-included)
     - [Type hierarchy](#type-hierarchy)
+    - [clob](#clob)
+      - [`clob` type](#clob-type)
+      - [`Clob` constructor](#clob-constructor)
+      - [Clob example](#clob-example)
     - [text](#text)
       - [`text` type](#text-type)
       - [`Text` constructor](#text-constructor)
@@ -167,7 +176,7 @@ type MyType<P extends PRIM> = ...
 
 ```ts
 export type prim<P extends PRIM, C = {}> =
-  P & { constructor: Constructor<P> } & C
+  P & supertype<P> & C
 ```
 
 `P` must extend `PRIM`, meaning it must extend one of the primitive
@@ -241,18 +250,18 @@ vice-versa.
 Typescript checks assignability based on the 'shape' of the type. `prim` uses
 this to create a system that resembles a type hierarchy. But we can go further!
 `prim` accepts a second parameter that we can use to refine the tagging with
-extra information. Lets use it to create a simple [`varchar`](#varchar-type)
+extra information. Let's use it to create a simple [`varchar`](#varchar-type)
 type:
 
 ```ts
-import { type prim, type Lte } from 'ts-prims'
+import { type prim, type Chars, type chars } from 'ts-prims'
 
-type varchar<N extends Lte<256>> =
-  prim<string, { max: Lte<N> }>
+type varchar<N extends Chars> =
+  prim<string, chars<N>>
 ```
 
-> [`Lte`](#lte) is a utility type that can be read as
-> **L**ess-**T**han-or-**E**qual
+[Chars](#chars) here is a type containing the possible length in chars for short
+strings and `chars` applies that as a contraint to the new primitive type.
 
 What does this achieve? Lets have a look:
 
@@ -316,47 +325,192 @@ function helps us achieve just that in a consistent and convenient way.
 export const Prim: PrimFactory = <P extends PRIM> (
   name: string,
   pc: SuperConstructor<P>,
-  rtti: Partial<Rtti<P>> = {}
+  constraints: Constraint[] | Constraint = []
 ): PrimConstructor<P>
 ```
 
 Lets see how it works:
 
 ```ts
-import { type prim, type PRIM, Prim } from 'ts-prims'
+import { type prim, Prim, isInteger } from 'ts-prims'
 
 type int = prim<number>
 
 // creates the constructor function
-const Int = Prim<int>('int', Number, {
-  is: (v: PRIM): v is int => Number.isInteger(v)
-})
+const Int = Prim<int>(
+  'int', Number, isInteger
+)
 ```
 
 The call to `Prim()` creates the function `Int`, that will call
-`Number.isInteger` on any value given to it, to verify that it is indeed an
+`isInteger` on any value given to it, to verify that it is indeed an
 integer. Now, we can use `Int` to perform runtime validation:
 
 ```ts
 let i: int = Int(100) // ok
 i = Int(0.5) // runtime error
-// TypeError: 0.5 is not of type 'int'
+// TypeError: 0.5 is not assignable to type 'int'.
+//   Not an integer.
 ```
 
-The third argument of `Prim` is an object of type [`Rtti`](#rtti). By default,
-an empty object is used, but you can supply your own object as we did above and
-provide custom functions for [`is`](#toprim), [`as`](#asprim) and
-[`to`](#toprim).
+The third argument of `Prim` is an (array of) [`Constraint`](#constraint). By
+default, an empty array is used, but you can supply your own constraints as we
+did above and provide custom functions for validation.
 
 This gives us a convenient and reusable pattern to work with primitive types,
 control assignability between different subtypes of the same base type and
 give them runtime presence.
 
 And that should be about enough about `prim` and `Prim`. You can read further
-about some of the helper types that are used under the hood, or you can skip
-down to the [primitive types included](#primitive-types-included) in ts-prims.
+about some of the [constraints](#constraints) that are available to use and how
+to write them yourself, have a look at the [helper types](#helper-types) that
+are used under the hood, or you can skip down to the
+[primitive types included](#primitive-types-included) in ts-prims.
+
+### Constraints
+
+Constraints are compile-time and/or runtime limitations on the values a certain
+type can hold. Included in `ts-prims` are three constraints that have both
+compile-time as well as runtime components.
+
+#### `width`
+
+Constraint limiting a type to the given Width `W`
+
+```ts
+export type width<W extends Width> =
+  { width: Lte<W> }
+```
+
+The `width` constraint can be used on integer numbers of type `number` or
+`bigint`. It has a compile-time component in the form of the `width` type
+and a runtime component in the form of a `widthConstraint`:
+
+```ts
+import { type prim, type width, Prim, widthConstraint }
+
+type int = prim<number, width<4>>
+const Int = Prim<int> ('int', Number, widthConstraint(4))
+```
+
+This limits the width of `int` values to `4`, which translates to 32 bits.
+
+#### `length`
+
+Constrains a type to the given length L.
+
+```ts
+export type length<L extends Length> =
+  { length: Lte<L>, chars: Lte<64> }
+```
+
+The `length` constraint is similar to the `width` constraint, but expanded to
+add 65 extra 'levels' between `0` and `1` by using not one but two properties
+to model the constraint:
+
+* `length` limits the type to a subset of 16 broad categories
+* `chars` can be used to further subdivide length `1`
+
+The `length` constraint always sets `chars` to `Lte<64>`, containing the full range
+between length `0` and `1` (64 chars).
+
+The constraint `chars` can be used to exercise fine-grained control.
+
+#### `chars`
+
+Constrains a type to the given length in chars `L`.
+
+```ts
+export type chars<L extends Chars> = {
+  length: Lte<LengthOf<L>>,
+  chars: L extends Lte<ShortLengthChars[1]> ? Lte<L> : Lte<ShortLengthChars[1]>
+}
+```
+
+This type allows you to express the length constraint on a short string
+with very high precision:
+
+```ts
+import type { prim, chars } from 'ts-prims'
+
+type article_tite = prim<string, chars<64>>
+type zipcode = prim<string, chars<5>>
+
+let zip: zipcode = '90210' as zipcode // ok
+let title = 'Hello World!' as article_tite // ok
+title = zip // ok
+zip = title // error
+// Type 'article_tite' is not assignable to type 'zipcode'.
+```
+
+Use this type in combination with `charsConstraint` for runtime presence:
+
+```ts
+export const charsConstraint: CharsConstraint =
+  <L extends Chars> (l: L) =>
+  <P extends PRIM> (pc: PrimConstructor<P>, v: PRIM) =>
+  (typeof v == 'string') && (v.length <= l) ? undefined :
+  `${display(v)} is not assignable to '${pc.name}'.\n` +
+  `  Length exceeds ${l}.`
+```
+
+Use it like this:
+
+```ts
+import type { prim, chars, Chars } from 'ts-prims'
+import { Prim, charsConstraint } from 'ts-prims'
+// a varchar with a length in chars `L`
+type varchar<L extends Chars> = prim<string, chars<L>>
+// the prim type constructor function for `varchar<L>`
+const Varchar = <L extends Chars>(l: L) => Prim<varchar<L>>(
+  `varchar<${l}>`, String, charsConstraint(l)
+)
+// you can now define varchars with length <= 256 chars:
+type zipcode = varchar<5>
+const Zipcode = Varchar(5)
+let zip: zipcode = Zipcode('90210') // ok
+let oops: zipcode = Zipcode('Too long!') // runtime error
+// TypeError: "Too long!" is not assignable to 'varchar<5>'.
+//   Length exceeds 5.
+```
+
+#### `superConstraint`
+
+Constraint that the primitive type of two types must be equal for them to be
+assignable to one another. This constraint is implied in the type system and
+made explicit in the runtime implementation through this object.
+
+
+```ts
+export const superConstraint: Constraint =
+  <P extends PRIM> (pc: PrimConstructor<P>, v: PRIM) =>
+  typeof v == primTypeOf(pc) ? undefined :
+  `${display(v)} is not assignable to type '${pc.name}'.\n` +
+  `  Supertypes do not match: ${typeof v}, ${primTypeOf(pc)}.`
+```
+
+#### `isInteger`
+
+Runtime constraint that checks whether the given value `v` is an integer.
+
+```ts
+export const isInteger: Constraint =
+  <P extends PRIM> (pc: PrimConstructor<P>, v: PRIM) =>
+  (typeof v == 'bigint') || Number.isInteger(v) ? undefined :
+  `${display(v)} is not assignable to type '${pc.name}'.\n` +
+  `  Not an integer.`
+```
 
 ### Helper types
+
+#### supertype
+
+Supertype constraint for a primitive type `P`
+
+```ts
+export type supertype<P extends PRIM> =
+  { supertype: Constructor<P> }
+```
 
 #### Constructor
 
@@ -429,7 +583,15 @@ export type AsPrim<P extends PRIM> = (v: PRIM) => asserts v is P
 
 #### PrimTypeOf
 
+The prim type of a given prim `P` is the underlying primitive type, e.g.
+`number` for `int32`, `bigint` for `big64`, `string` for `memo` etc.
+
 ```ts
+export type PrimTypeOf<P extends PRIM> =
+  P extends boolean ? boolean :
+  P extends string ? string :
+  P extends number ? number :
+  bigint
 ```
 
 #### Rtti
@@ -457,44 +619,6 @@ const Int = Prim<int>('int', Number)
 `Int` will have properties `name`, `super`, `is`, `as`, `to`, which are
 inspectable and usable at runtime.
 
-#### HasSuper
-
-Checks whether the given prim constructor function `pc` has a `super`
-constructor associated with it. This is true for all constructor functions
-created by `Prim`, but not for the native constructor functions.
-
-```ts
-export type HasSuper =
-  <P extends PRIM> (pc: Constructor<P>) =>
-  pc is PrimConstructor<P>
-```
-
-There is a runtime function that implements it:
-
-```ts
-export const hasSuper: HasSuper =
-  <P extends PRIM> (pc: Constructor<P>):
-  pc is PrimConstructor<P>
-```
-
-#### GetSuper
-
-Returns the associated `super` constructor function, if any.
-
-```ts
-export type GetSuper =
-  <P extends PRIM> (pc: Constructor<P>) =>
-  SuperConstructor<P> | undefined
-```
-
-There is a runtime function implementing it:
-
-```ts
-export const getSuper: GetSuper =
-  <P extends PRIM> (pc: Constructor<P>):
-  SuperConstructor<P> | undefined
-```
-
 #### PrimFactory
 
 A prim factory creates user-defined constructor functions for
@@ -505,7 +629,7 @@ export type PrimFactory =
   <P extends PRIM> (
     name: string,
     pc: SuperConstructor<P>,
-    rtti?: Partial<Rtti<P>
+    constraints: Constraint[] | Constraint
   >) => PrimConstructor<P>
 ```
 
@@ -522,53 +646,88 @@ your domain. Enjoy!
 
 The types in this project are laid out in this hierarchy:
 
++- [`prim`](#prim) (extends `boolean | string | number | bigint`)
+    +- `boolean`
+    +- `string`
+    |   +- [`clob`](#clob)
+    |   +- [`text`](#text)
+    |   +- [`memo`](#memo)
+    |   +- [`varchar<L>`](#varchar)
+    |
+    +- [`varint<W>`](#varint) (`extends number | bigint`)
+        +- `number`
+        |   +- [`int<LW>`](#int)
+        |       +- [`int8`](#int8)
+        |       +- [`int16`](#int16)
+        |       +- [`int24`](#int24)
+        |       +- [`int32`](#int32)
+        |       +- [`int40`](#int40)
+        |       +- [`int48`](#int48)
+        |       +- [`int54`](#int54)
+        |
+        +- `bigint`
+            +- [`big<W>`](#big)
+                +- [`big64`](#big64)
+                +- [`big96`](#big96)
+                +- [`big128`](#big128)
+                +- [`big160`](#big160)
+                +- [`big192`](#big192)
+                +- [`big256`](#big256)
+                +- [`big512`](#big512)
+                +- [`big4K`](#big4k)
+
+### clob
+
+**C**haracter **L**arge **Ob**ject
+
+#### `clob` type
+
+The base prim type for strings with a very high maximum length of
+4294967296 characters (4G).
+
+```ts
+export type clob =
+  prim<string, length<15>>
 ```
-  +- [`prim`](#prim) (extends `boolean | string | number | bigint`)
-      +- `boolean`
-      +- `string`
-      |   +- [`text<W>`](#text)
-      |       +- [`memo`](#memo)
-      |           +- [`varchar<L>`](#varchar)
-      |
-      +- [`varint<W>`](#varint) (`extends number | bigint`)
-          +- `number`
-          |   +- [`int<LW>`](#int)
-          |       +- [`int8`](#int8)
-          |       +- [`int16`](#int16)
-          |       +- [`int24`](#int24)
-          |       +- [`int32`](#int32)
-          |       +- [`int40`](#int40)
-          |       +- [`int48`](#int48)
-          |       +- [`int54`](#int54)
-          |
-          +- `bigint`
-              +- [`big<W>`](#big)
-                  +- [`big64`](#big64)
-                  +- [`big96`](#big96)
-                  +- [`big128`](#big128)
-                  +- [`big160`](#big160)
-                  +- [`big192`](#big192)
-                  +- [`big256`](#big256)
-                  +- [`big512`](#big512)
-                  +- [`big4K`](#big4k)
+
+#### `Clob` constructor
+
+```ts
+export const Clob = Prim<clob>(
+  `clob`, String, lengthConstraint(15)
+)
+```
+
+#### Clob example
+
+```ts
+import { type clob, Clob } from 'ts-prims'
+
+// narrow using cast
+let x: clob = 'Hello World!' as clob
+// or using runtime check by constructor
+x = Clob('Checked at runtime')
 ```
 
 ### text
 
+For long text.
+
 #### `text` type
+
+The base prim type for text with a maximum length of 16777216 characters (16M), length `14`.
 
 ```ts
 export type text =
-  prim<string>
+  prim<string, length<14>>
 ```
-
-The base prim type for text with an unbounded length.
 
 #### `Text` constructor
 
 ```ts
-export const Text =
-  Prim<text>(`text`, String)
+export const Text = Prim<text>(
+  `text`, String, [ lengthConstraint(14) ]
+)
 ```
 
 #### Text example
@@ -584,23 +743,23 @@ x = Text('Checked at runtime')
 
 ### memo
 
+For medium text.
+
 #### `memo` type
 
-The base prim type for text with a maximum length of 65535 chars (64KiB)
+The base prim type for text with a maximum length of 4096 chars (4K)
 
 ```ts
 export type memo =
-  prim<text>
+  prim<string, length<11>>
 ```
 
 #### `Memo` constructor
 
 ```ts
-export const Memo =
-  Prim<memo> ('memo', Text, {
-    is: (v: PRIM): v is prim<memo> =>
-      Text.is(v) && v.length <= 65535,
-  })
+export const Memo = Prim<memo> (
+  'memo', String, [ lengthConstraint(11) ]
+)
 ```
 
 #### Memo example
@@ -618,32 +777,30 @@ x = y // error
 // Type 'text' is not assignable to type 'memo'.
 ```
 
-See: [text](#text)
-
 ### varchar
+
+For high-precision short strings
 
 #### `varchar` type
 
-```ts
-export type varchar<N extends Lte<256>> =
-  prim<memo, { max: Lte<N> }>
-```
+A variable length string with a maximum length of `N`
 
-A variable length string with a maximum length of `N`.
+```ts
+export type varchar<N extends Chars> =
+  prim<string, chars<N>>
+```
 
 `N` must be a literal positive integer number in the range 0 .. 256.
 
-This type is meant to model strings with a limited length like SQL's `varchar`. For longer strings, use `memo` if the string length remains below 64K, or `text` otherwise.
+This type is meant to model strings with a limited length like SQL's `varchar`. For longer strings, use `memo` if the string length remains below 4K, or `text` otherwise.
 
 #### `Varchar` constructor
 
 ```ts
 export const Varchar =
-  <N extends Lte<256>> (n: N) =>
-  Prim <varchar<N>> (`varchar<${n}>`, Memo, {
-    is: (v: PRIM): v is varchar<N> =>
-      Memo.is(v) && v.length <= n
-  })
+  <N extends Chars> (n: N) => Prim <varchar<N>> (
+    `varchar<${n}>`, Memo, [ charsConstraint(n) ]
+  )
 ```
 
 #### Varchar example
@@ -672,6 +829,12 @@ See: [text](#text), [memo](#memo)
 
 ### varint
 
+Fixed variable-width integer type
+
+```ts
+export type VARINT = number | bigint
+```
+
 #### `varint` type
 
 Low-level 'fixed variable-width' signed integer type.
@@ -684,7 +847,7 @@ width numbers, but not vice versa.
 
 ```ts
 export type varint <W extends Width> =
-  prim<IntType<W>, { width: Lte<W> }>
+  prim<IntegerType<W>, width<W>>
 ```
 
 `IntType` automatically selects the smallest underlying type that will fit:
@@ -699,13 +862,16 @@ Prefer [`int`](#int) and [`big`](#big) in stead.
 
 #### `Varint` constructor
 
+Returns the prim constructor for the `varint` with the given Width `W`.
+
 ```ts
-export const Varint =
-  <W extends Width> (w:W) =>
-  Prim<varint<W>>(
-    `varint<${w}>`, intType(w) as SuperConstructor<varint<W>>
-  )
+export const Varint = <W extends Width> (w:W) => Prim<varint<W>> (
+  `varint<${w}>`, integerType(w), [ isInteger, widthConstraint(w) ]
+)
 ```
+
+This constructor function validates that the given value `v` is an integer and
+that it is within the range of the width `w`.
 
 #### Varint example
 
@@ -721,38 +887,45 @@ x = y // Type 'Y' is not assignable to type 'X'.
 y = x
 y = z // Type 'Z' is not assignable to type 'Y'.
 z = y // Type 'Y' is not assignable to type 'Z'.
+
+type byte = varint<1>
+const Byte = Varint(1)
+let b: byte = Byte(250) // runtime error
+// TypeError: 250 is not assignable to 'varint<1>'.
+//   Not in range -128 .. 127.
 ```
 
 ### int
+
+Low width integers
 
 #### `int` type
 
 Int type with low int width `W`.
 
 ```ts
-export type int <W extends LowWidth> =
-  prim<number, { width: Lte<W> }>
+export type int <W extends LowWidth = 7> =
+  prim<number, width<W>>
 ```
 
 
 #### `Int` constructor
 
+```ts
+export const Int =
+  <W extends LowWidth = 7> (w:W = 7 as W) => Prim<int<W>> (
+    `int<${w}>`, Number, [ isInteger, widthConstraint(w) ]
+  )
+```
+
 #### Int example
 
 ```ts
 type byte = int<1>
-// type byte = number & {
-//     constructor: Constructor<number>;
-// } & {
-//     width: Lte<1>;
-// }
+// type byte = number & supertype<number> & width<1>
 
 type word = int<2>
-// type word = number & {
-//     constructor: Constructor<number>;
-// } & {
-//     width: Lte<2>;
-// }
+// type word = number & supertype<number> & width<2>
 
 let x: byte = 100 as byte
 let y: word = 1000 as word
@@ -793,13 +966,15 @@ export type int54 = int<_54bit>
 
 ### big
 
+Big integer numbers
+
 #### `big` type
 
 Big int type with high int width `W`.
 
 ```ts
 export type big <W extends Width> =
-  prim<bigint, { width: Lte<W> }>
+  prim<bigint, width<W>>
 ```
 
 #### `Big` constructor
@@ -807,11 +982,9 @@ export type big <W extends Width> =
 Returns a constructor for `big` numbers with the given Width `W`.
 
 ```ts
-export const Big =
-  <W extends Width> (w:W) =>
-  Prim<big<W>>(
-    `big<${w}>`, BigInt
-  )
+export const Big = <W extends Width> (w:W) => Prim<big<W>> (
+  `big<${w}>`, BigInt, [ isInteger, widthConstraint(w) ]
+)
 ```
 
 #### Big example
@@ -820,11 +993,7 @@ export const Big =
 import type { big, _4Kbit } from 'ts-prims'
 
 type big4k = big<_4Kbit>
-// type big4k = bigint & {
-//     constructor: Constructor<bigint>;
-// } & {
-//     width: Lte<15>;
-// }
+// type big4K = bigint & supertype<bigint> & width<15>
 ```
 
 #### big64
