@@ -646,35 +646,33 @@ your domain. Enjoy!
 
 The types in this project are laid out in this hierarchy:
 
-+- [`prim`](#prim) (extends `boolean | string | number | bigint`)
-    +- `boolean`
-    +- `string`
-    |   +- [`clob`](#clob)
-    |   +- [`text`](#text)
-    |   +- [`memo`](#memo)
-    |   +- [`varchar<L>`](#varchar)
-    |
-    +- [`varint<W>`](#varint) (`extends number | bigint`)
-        +- `number`
-        |   +- [`int<LW>`](#int)
-        |       +- [`int8`](#int8)
-        |       +- [`int16`](#int16)
-        |       +- [`int24`](#int24)
-        |       +- [`int32`](#int32)
-        |       +- [`int40`](#int40)
-        |       +- [`int48`](#int48)
-        |       +- [`int54`](#int54)
-        |
-        +- `bigint`
-            +- [`big<W>`](#big)
-                +- [`big64`](#big64)
-                +- [`big96`](#big96)
-                +- [`big128`](#big128)
-                +- [`big160`](#big160)
-                +- [`big192`](#big192)
-                +- [`big256`](#big256)
-                +- [`big512`](#big512)
-                +- [`big4K`](#big4k)
+* [`prim`](#prim) (extends `boolean | string | number | bigint`)
+    * [`varint<W>`](#varint) (`extends number | bigint`)
+    * `boolean`
+    * `string`
+        * [`clob`](#clob)
+        * [`text`](#text)
+        * [`memo`](#memo)
+        * [`varchar<L>`](#varchar)
+    * `number`
+        * [`int<LW>`](#int)
+        * [`int8`](#int8)
+        * [`int16`](#int16)
+        * [`int24`](#int24)
+        * [`int32`](#int32)
+        * [`int40`](#int40)
+        * [`int48`](#int48)
+        * [`int54`](#int54)
+    * `bigint`
+        * [`big<W>`](#big)
+        * [`big64`](#big64)
+        * [`big96`](#big96)
+        * [`big128`](#big128)
+        * [`big160`](#big160)
+        * [`big192`](#big192)
+        * [`big256`](#big256)
+        * [`big512`](#big512)
+        * [`big4K`](#big4k)
 
 ### clob
 

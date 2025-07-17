@@ -1,6 +1,6 @@
 {
   "name": "ts-prims",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Typescript Primitives",
   "main": "./lib/cjs/index.js",
   "module": "./lib/mjs/index.js",
